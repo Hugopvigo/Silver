@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # Hacer una petición HTTP a la web
+name = 'Australia Canguro'
 url = "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-canguro-2023-1oz-plata-info"
 response = requests.get(url)
 
@@ -16,4 +17,4 @@ price_text = price_element.get_text()
 price_number = float(price_text.replace("€", "").replace(",", "."))
 
 # Imprimir el precio del producto
-print(f"El precio del Australia Canguro es {price_number} euros.")
+print(f"El precio del {name} es {price_number} euros.")
