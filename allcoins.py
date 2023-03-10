@@ -50,7 +50,7 @@ def check_price(product):
     notifier = TelegramNotifier(token=token, chat_id=chat_id, parse_mode="HTML")
 # Enviar un mensaje al chat_id cuando se cumpla una condición    
     print(f"El {product['name']} está a {price_number} euros. ¡Es una buena oferta! | {stock_status}")
-    notifier.send(f"El {product['name']} está a <b>{price_number} euros.</b> | {stock_status} | {cadena} ")
+    notifier.send(f"El {product['name']} está a <b>{price_number} euros.</b> | {stock_status} | {cadena} | Compralo en: {product['url']}")
   elif price_number > product["max_price"]:
     print(f"{product['name']} está caro. {stock_status}")      
 # Usar un bucle for para iterar sobre la lista de diccionarios y llamar a la función para cada uno
