@@ -45,8 +45,10 @@ def check_price(product):
 # Comparar el precio extraído con el precio máximo del diccionario y si es menor, imprimir un mensaje con el nombre y el precio del producto
   if price_number < product["max_price"]:
 # Configurar el chat_id y el token del bot
+    f = open("token.txt", "r")
+    Token = f.read()
     chat_id = "1333872" # Tu chat_id
-    token = "6074866123:AAGacC5qvmV5IYOCEoJ8PZ2SBirmFyzd1rQ" # Tu token del bot
+    token = Token # Tu token del bot
     notifier = TelegramNotifier(token=token, chat_id=chat_id, parse_mode="HTML")
 # Enviar un mensaje al chat_id cuando se cumpla una condición    
     print(f"El {product['name']} está a {price_number} euros. ¡Es una buena oferta! | {stock_status}")
