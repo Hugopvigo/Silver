@@ -1,3 +1,5 @@
+# Ignorar el archivo que contiene el token
+token.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
