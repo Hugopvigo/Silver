@@ -27,7 +27,7 @@ else:
 
 # Crear una lista de diccionarios con las urls, los nombres y los precios máximos de los productos que quieres analizar
 products = [
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/germania-2023-1oz-plata-info", "name": "Germania", "max_price": 37},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/germania-2023-1oz-plata-info", "name": "Germania", "max_price": 36},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/estados-unidos/estados-unidos-american-eagle-2023-1oz-plata-info", "name": "American Eagle", "max_price": 33},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2023-30-00g-plata-info", "name": "Panda", "max_price": 31},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-wedge-tailed-2023-1oz-plata-info", "name": "Wedge Tailed", "max_price": 30},
@@ -72,10 +72,10 @@ def check_price(product):
     token = Token # Tu token del bot
     notifier = TelegramNotifier(token=token, chat_id=chat_id, parse_mode="HTML")
     # Enviar un mensaje al chat_id cuando se cumpla una condición    
-    print(cadena, f"El {product['name']} está a {price_number} euros. ¡Es una buena oferta! | {stock_status}")
+    print(cadena, f"La moneda {product['name']} está a {price_number} euros. ¡Es una buena oferta! | {stock_status}")
     row = (cadena, f"{product['name']}", f"{price_number} ", f"{stock_status}")
     sheet.append(row)
-    notifier.send(f"El {product['name']} está a <b>{price_number} euros.</b> | {stock_status} | {cadena} | Compralo en: {product['url']}")
+    notifier.send(f"La moneda {product['name']} está a <b>{price_number} euros.</b> ¡Es una buena oferta! | {stock_status} | {cadena} | Compralo en: {product['url']}")
   elif price_number > product["max_price"]:
     print(cadena, f"{product['name']} está a {price_number} euros y es caro. {stock_status}")      
     row = (cadena, f"{product['name']}", f"{price_number}", f"{stock_status}")
