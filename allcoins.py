@@ -86,7 +86,7 @@ def check_price(product):
 for product in products:
   check_price(product)    
   # Programar la función para que se ejecute cada dos horas
-  schedule.every().hour.do(check_price,product)
+  schedule.every(3).hours.do(check_price,product)
 # Ejecutar un bucle infinito que comprueba si hay tareas pendientes
 while True:
   schedule.run_pending()
