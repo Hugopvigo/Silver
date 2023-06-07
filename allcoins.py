@@ -90,4 +90,4 @@ for product in products:
 # Ejecutar un bucle infinito que comprueba si hay tareas pendientes
 while True:
   schedule.run_pending()
-  time.sleep(1)  
+  time.sleep(2)  
