@@ -70,7 +70,7 @@ def check_price(product):
   cadena = ahora.strftime("%d/%m/%Y %H:%M")
 
  # Comparar el precio extraído con el precio máximo de la lista y si es menor, imprimir un mensaje con el nombre y el precio del producto
-  if price_number < product["max_price"] and "%Fuera de Stock%" not in availability_status:
+  if price_number < product["max_price"] and "Fuera de Stock" not in availability_status.lower():
     # Configurar el chat_id y el token del bot
     f = open("token.txt", "r")
     Token = f.read()
