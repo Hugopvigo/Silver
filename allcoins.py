@@ -43,7 +43,7 @@ products = [
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/estados-unidos/estados-unidos-american-eagle-2023-1oz-plata-info", "name": "American Eagle", "max_price": 30},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2023-30-00g-plata-info", "name": "Panda", "max_price": 30},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2024-30g-plata-info", "name": "Panda '24", "max_price": 30},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/mexico/mexico-libertad-de-mexico-2023-1oz-plata-info", "name": "Panda '24", "max_price": 28},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/mexico/mexico-libertad-de-mexico-2023-1oz-plata-info", "name": "Mexico", "max_price": 28},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/malta-malta-golden-eagle-2023-1oz-plata-info", "name": "Panda", "max_price": 28}
 ]
 
