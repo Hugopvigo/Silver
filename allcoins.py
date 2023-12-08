@@ -44,7 +44,7 @@ products = [
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2023-30-00g-plata-info", "name": "Panda", "max_price": 30},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2024-30g-plata-info", "name": "Panda '24", "max_price": 30},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/mexico/mexico-libertad-de-mexico-2023-1oz-plata-info", "name": "Mexico", "max_price": 28},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/malta-malta-golden-eagle-2023-1oz-plata-info", "name": "Panda", "max_price": 28}
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/malta-malta-golden-eagle-2023-1oz-plata-info", "name": "Panda", "max_price": 8}
 ]
 
 
@@ -66,8 +66,15 @@ def check_price(product):
   price_number = float(price_text.replace("€", "").replace(",", "."))
 
   # Extraer el texto de stock_availability
-  availability_text = availability_element.get_text()
-  availability_status = availability_text.replace("Debido a la situación actual, ciertos productos pueden sufrir retrasos excepcionales.", " ").replace("\n", "").replace("Estado:", "")
+  #availability_text = availability_element.get_text()
+  #availability_status = availability_text.replace("Debido a la situación actual, ciertos productos pueden sufrir retrasos excepcionales.", " ").replace("\n", "").replace("Estado:", "")
+  if availability_element:
+      availability_text = availability_element.get_text()
+      availability_status = availability_text.replace("Debido a la situación actual, ciertos productos pueden sufrir retrasos excepcionales.", " ").replace("\n", "").replace("Estado:", "")
+  else:
+      availability_status = "No disponible"  # O cualquier otro valor predeterminado que desees
+      print(f"Advertencia: No se pudo encontrar el elemento de disponibilidad para {product['name']}")
+      print(f"Contenido de la página web:\n {soup.prettify()}")  # Imprimir el contenido de la página web para depuración
 
   # Obtener fecha y hora actual
   ahora = datetime.datetime.now()
