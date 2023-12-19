@@ -26,14 +26,14 @@ else:
   sheet['C1'] = 'Precio'
   sheet['D1'] = 'Stock'
 
-# Crear una lista de diccionarios con las urls, los nombres y los precios máximos de los productos que quieres analizar
+  # Crear una lista de diccionarios con las urls, los nombres y los precios máximos de los productos que quieres analizar
 products = [
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/austria/austria-filarmonica-2023-1oz-plata-info", "name": "Filarmonica", "max_price": 24},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/republica-de-chad-toro-y-oso-2023-1oz-plata-info", "name": "Toro y Oso", "max_price": 24},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/republica-de-chad-diosa-europa-2023-1oz-plata-info", "name": "Diosa Europa", "max_price": 24},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-kciii-2023-1oz-plata-info", "name": "Britannia Orejas", "max_price": 24},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-2023-1oz-plata-info", "name": "Britannia", "max_price": 25},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-kciii-2024-1oz-plata-info 28", "name": "Britannia '24", "max_price": 25},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-2023-1oz-plata-info", "name": "Britannia 23", "max_price": 25},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-kciii-2024-1oz-plata-info", "name": "Britannia 24", "max_price": 25},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/sudafrica-krugerrand-2023-1oz-plata-info", "name": "Krugerrand", "max_price": 26},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/canada/canada-maple-leaf-2023-1oz-plata-info", "name": "Maple Leaf", "max_price": 27},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-canguro-2023-1oz-plata-info", "name": "Canguro", "max_price": 25},
@@ -42,11 +42,10 @@ products = [
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-dragon-rectangular-2023-1oz-plata-info", "name": "Dragon Rectangular", "max_price": 29},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/estados-unidos/estados-unidos-american-eagle-2023-1oz-plata-info", "name": "American Eagle", "max_price": 30},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2023-30-00g-plata-info", "name": "Panda", "max_price": 30},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2024-30g-plata-info", "name": "Panda '24", "max_price": 30},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2024-30g-plata-info", "name": "Panda 24", "max_price": 30},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/mexico/mexico-libertad-de-mexico-2023-1oz-plata-info", "name": "Mexico", "max_price": 28},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/malta-malta-golden-eagle-2023-1oz-plata-info", "name": "Panda", "max_price": 8}
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/malta-malta-golden-eagle-2023-1oz-plata-info", "name": "Malta", "max_price": 28}
 ]
-
 
 # Definir una función que reciba un diccionario como argumento y extraiga el precio de la url usando beautifulsoup
 def check_price(product):
@@ -66,23 +65,19 @@ def check_price(product):
   price_number = float(price_text.replace("€", "").replace(",", "."))
 
   # Extraer el texto de stock_availability
-  #availability_text = availability_element.get_text()
-  #availability_status = availability_text.replace("Debido a la situación actual, ciertos productos pueden sufrir retrasos excepcionales.", " ").replace("\n", "").replace("Estado:", "")
-  if availability_element:
-      availability_text = availability_element.get_text()
-      availability_status = availability_text.replace("Debido a la situación actual, ciertos productos pueden sufrir retrasos excepcionales.", " ").replace("\n", "").replace("Estado:", "")
-  else:
-      availability_status = "No disponible"  # O cualquier otro valor predeterminado que desees
-      print(f"Advertencia: No se pudo encontrar el elemento de disponibilidad para {product['name']}")
-      print(f"Contenido de la página web:\n {soup.prettify()}")  # Imprimir el contenido de la página web para depuración
+  availability_text = availability_element.get_text()
+  availability_status = availability_text.replace("Debido a la situación actual, ciertos productos pueden sufrir retrasos excepcionales.", " ").replace("\n", "").replace("Estado:", "").strip()
+  
+  print(f"Moneda: {product['name']}, Precio: {price_number}, Estado: {availability_status}")
 
   # Obtener fecha y hora actual
   ahora = datetime.datetime.now()
   # Formatear la fecha y la hora como una cadena
   cadena = ahora.strftime("%d/%m/%Y %H:%M")
 
- # Comparar el precio extraído con el precio máximo de la lista y si es menor, imprimir un mensaje con el nombre y el precio del producto
-  if price_number < product["max_price"] and "Fuera de Stock" not in availability_status.lower():
+  # Comparar el precio extraído con el precio máximo de la lista y si es menor, imprimir un mensaje con el nombre y el precio del producto
+  if price_number < product["max_price"] and availability_status.lower() not in ["fuera de stock", "agotado temporalmente"]:
+
     # Configurar el chat_id y el token del bot
     f = open("token.txt", "r")
     Token = f.read()
@@ -93,7 +88,7 @@ def check_price(product):
     print(cadena, f"La moneda {product['name']} está a {price_number} euros. ¡Es una buena oferta! | {availability_status}")
     row = (cadena, f"{product['name']}", f"{price_number} ", f"{availability_status}")
     sheet.append(row)
-    notifier.send(f"La moneda {product['name']} está a <b>{price_number} euros.</b> ¡Es una buena oferta! | {availability_status} | {cadena} | Compralo en: {product['url']}")
+    notifier.send(f" TEST - La moneda {product['name']} está a <b>{price_number} euros.</b> ¡Es una buena oferta! | {availability_status} | {cadena} | Compralo en: {product['url']}")
   elif price_number > product["max_price"]:
     print(cadena, f"{product['name']} está a {price_number} euros y es caro. {availability_status}")
     row = (cadena, f"{product['name']}", f"{price_number}", f"{availability_status}")
