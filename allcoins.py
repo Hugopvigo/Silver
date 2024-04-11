@@ -28,23 +28,23 @@ else:
 
   # Crear una lista de diccionarios con las urls, los nombres y los precios máximos de los productos que quieres analizar
 products = [
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/austria/austria-filarmonica-2023-1oz-plata-info", "name": "Filarmonica", "max_price": 24},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/republica-de-chad-toro-y-oso-2023-1oz-plata-info", "name": "Toro y Oso", "max_price": 24},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/republica-de-chad-diosa-europa-2023-1oz-plata-info", "name": "Diosa Europa", "max_price": 24},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-kciii-2023-1oz-plata-info", "name": "Britannia Orejas", "max_price": 24},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-2023-1oz-plata-info", "name": "Britannia 23", "max_price": 25},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/austria/austria-filarmonica-2023-1oz-plata-info", "name": "Filarmonica", "max_price": 24},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/republica-de-chad-toro-y-oso-2023-1oz-plata-info", "name": "Toro y Oso", "max_price": 24},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/republica-de-chad-diosa-europa-2023-1oz-plata-info", "name": "Diosa Europa", "max_price": 24},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-kciii-2023-1oz-plata-info", "name": "Britannia Orejas", "max_price": 24},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-2023-1oz-plata-info", "name": "Britannia 23", "max_price": 25},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-kciii-2024-1oz-plata-info", "name": "Britannia 24", "max_price": 25},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/sudafrica-krugerrand-2023-1oz-plata-info", "name": "Krugerrand", "max_price": 26},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/canada/canada-maple-leaf-2023-1oz-plata-info", "name": "Maple Leaf", "max_price": 27},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-canguro-2023-1oz-plata-info", "name": "Canguro", "max_price": 25},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-wedge-tailed-2023-1oz-plata-info", "name": "Wedge Tailed", "max_price": 28},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-koala-2023-1oz-plata-info", "name": "Koala", "max_price": 28},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-dragon-rectangular-2023-1oz-plata-info", "name": "Dragon Rectangular", "max_price": 29},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/estados-unidos/estados-unidos-american-eagle-2023-1oz-plata-info", "name": "American Eagle", "max_price": 30},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2023-30-00g-plata-info", "name": "Panda", "max_price": 30},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/sudafrica-krugerrand-2024-1oz-plata-info", "name": "Krugerrand", "max_price": 26},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/canada/canada-maple-leaf-2024-1oz-plata-info", "name": "Maple Leaf", "max_price": 27},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-canguro-2024-1oz-plata-info", "name": "Canguro", "max_price": 25},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-wedge-tailed-2023-1oz-plata-info", "name": "Wedge Tailed", "max_price": 28},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-koala-2023-1oz-plata-info", "name": "Koala", "max_price": 28},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/australia/australia-dragon-rectangular-2023-1oz-plata-info", "name": "Dragon Rectangular", "max_price": 29},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/estados-unidos/estados-unidos-american-eagle-2023-1oz-plata-info", "name": "American Eagle", "max_price": 30},
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2023-30-00g-plata-info", "name": "Panda", "max_price": 30},
 {"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/china/china-panda-2024-30g-plata-info", "name": "Panda 24", "max_price": 30},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/mexico/mexico-libertad-de-mexico-2023-1oz-plata-info", "name": "Mexico", "max_price": 28},
-{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/malta-malta-golden-eagle-2023-1oz-plata-info", "name": "Malta", "max_price": 28}
+#{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/mexico/mexico-libertad-de-mexico-2023-1oz-plata-info", "name": "Mexico", "max_price": 28},
+{"url": "https://www.andorrano-joyeria.com/tienda/monedas-de-plata/otros-paises/malta-cruz-de-malta-2024-1oz-plata-info", "name": "Malta", "max_price": 28}
 ]
 
 # Definir una función que reciba un diccionario como argumento y extraiga el precio de la url usando beautifulsoup
