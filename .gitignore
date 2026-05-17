@@ -1,5 +1,7 @@
 # Ignorar el archivo que contiene el token
 token.txt
+# Plan de mejora — documento de trabajo
+PlanMejora.md
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
