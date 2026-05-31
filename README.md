@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-blue?style=for-the-badge)
 
 ---
 
@@ -99,4 +99,4 @@ tail -f salida.log
 
 ## 📝 License
 
-MIT — ver [LICENSE](LICENSE)
+**CC BY-NC-SA 4.0** — Consulta [LICENSE](LICENSE) para más detalles.
