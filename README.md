@@ -2,16 +2,17 @@
 
 # 🪙 Silver
 
-### *Precios de la plata en tiempo real*
+### *Vigilante de primas sobre la plata*
 
-![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)
 ![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-blue?style=for-the-badge)
 
 ---
 
-*Script que obtiene los precios de monedas de plata,*
-*los exporta a Google Sheets y envía alertas por Telegram.*
+*Scrapea monedas de plata de 1 oz en andorrano-joyeria.com, calcula su prima*
+*sobre el precio spot y avisa por Telegram cuando hay ganga. Con resumen*
+*diario para saber que está vivo.*
 
 </div>
 
@@ -21,51 +22,74 @@
 
 | | |
 |---|---|
-| 🪙 | **Múltiples monedas** — precio de plata en diversas divisas |
-| 📊 | **Google Sheets** — exporta automáticamente a una hoja de cálculo |
-| 🔔 | **Alertas Telegram** — notificación cuando cambia el precio |
-| ⏰ | **Automático** — ejecución programada cada 6 horas |
-| 🔄 | **Reintentos** — manejo robusto de errores de red |
+| 📈 | **Umbral dinámico** — prima % sobre el spot XAG (gold-api.com + BCE), no precios fijos |
+| 🪙 | **Una línea por serie** — de cada moneda vigila la variante más barata (año actual vs "años varios") |
+| ⚡ | **Alertas instantáneas** — Telegram en cuanto una serie baja del umbral de prima |
+| 📊 | **Resumen diario** — latido con spot, todas las series, sus primas y errores del día |
+| 💾 | **Histórico CSV** — `historico.csv` con fecha, precio, spot y prima |
+| 🔄 | **Reintentos** — backoff exponencial ante fallos de red; los errores nunca matan el digest |
 
 ---
 
 ## 🚀 Instalación
-
-### Requisitos
-
-- Python 3.8+
-- Cuenta de Google Sheets API
-- Bot de Telegram (optional)
-
-### Pasos
 
 ```bash
 # 1. Clonar
 git clone https://github.com/Hugopvigo/Silver.git
 cd Silver
 
-# 2. Instalar dependencias
-pip install -r requirements.txt
+# 2. Entorno virtual
+python3 -m venv .venv
+.venv/bin/pip install requests beautifulsoup4 pyyaml
 
 # 3. Configurar
-cp .env.example .env
-# Editar .env con tus credenciales
-
-# 4. Ejecutar
-python allcoins.py
+#    - token.txt: token del bot de Telegram
+#    - config.yaml: chat_id, hora del resumen y series vigiladas
 ```
 
-### Despliegue en VPS (cron)
+### Despliegue en VPS (systemd timer)
 
 ```bash
-# Editar crontab
-crontab -e
+sudo cp deploy/silver.service deploy/silver.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now silver.timer
 
-# Añadir (cada 6 horas):
-0 */6 * * * cd /home/user/Silver && python3 allcoins.py >> salida.log 2>&1
+# Ver el estado
+systemctl list-timers silver.timer
+journalctl -u silver -f
 ```
 
-Ver [Install.md](Install.md) para guía completa.
+---
+
+## ⚙️ Configuración (`config.yaml`)
+
+```yaml
+digest_hour: 10          # hora (Europe/Madrid) del resumen diario
+timezone: Europe/Madrid
+chat_id: "1333872"
+token_file: token.txt
+series:
+  - {name: Britannia,   keyword: britannia,   max_premium: 0.05}
+  - {name: Krugerrand,  keyword: krugerrand,  max_premium: 0.05}
+  # keyword = fragmento inicial del slug en la URL de la tienda
+  # max_premium = prima máxima sobre spot antes de avisar (0.05 = 5%)
+```
+
+---
+
+## 🔔 Ejemplo de resumen diario
+
+```
+📊 Silver diario — 23/08
+Spot plata: 59,07 €/oz
+
+• Britannia: 77,07 € (+30.5%) [años varios]
+• Krugerrand: 79,88 € (+35.2%) [2026]
+• Panda 30g: 83,47 € (+41.3%) [2026]
+...
+
+✅ 6/6 series | errores: 0
+```
 
 ---
 
@@ -73,27 +97,14 @@ Ver [Install.md](Install.md) para guía completa.
 
 ```
 Silver/
-├── allcoins.py         ← Script principal
-├── coin.py             ← Lógica de parsing de precios
-├── GoogleSheet.py      ← Exportación a Google Sheets
-├── precioplata.xlsx    ← Datos de referencia
-└── Install.md          ← Guía de instalación en VPS
+├── allcoins.py      ← Script principal (corre y sale; lo dispara systemd)
+├── config.yaml      ← Series, umbrales y Telegram
+├── token.txt        ← Token del bot (no versionado)
+├── historico.csv    ← Histórico de precios (se genera solo)
+└── docs/superpowers/specs/  ← Diseño de la v2
 ```
 
----
-
-## 🛠️ Uso
-
-```bash
-# Ejecución directa
-python3 allcoins.py
-
-# Con logs
-nohup python3 allcoins.py > salida.log 2>&1 &
-
-# Ver logs
-tail -f salida.log
-```
+`precioplata.xlsx`, `GoogleSheet.py` y `coin.py` son legado de la v1.
 
 ---
 

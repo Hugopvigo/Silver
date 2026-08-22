@@ -1,5 +1,11 @@
 # Ignorar el archivo que contiene el token
 token.txt
+# Documentos internos (solo se publica README.md)
+docs/
+# Datos generados e historicos
+historico.csv
+*.bak
+.venv/
 # Plan de mejora — documento de trabajo
 PlanMejora.md
 # Byte-compiled / optimized / DLL files
