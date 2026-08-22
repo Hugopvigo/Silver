@@ -1,0 +1,11 @@
+[Unit]
+Description=Silver - vigilancia de primas sobre la plata
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/dev/Silver
+ExecStart=/home/ubuntu/dev/Silver/.venv/bin/python allcoins.py
+SyslogIdentifier=silver
