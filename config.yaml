@@ -1,0 +1,11 @@
+digest_hour: 10
+timezone: Europe/Madrid
+chat_id: "1333872"
+token_file: token.txt
+series:
+  - {name: Britannia,   keyword: britannia,   max_premium: 0.05}
+  - {name: Krugerrand,  keyword: krugerrand,  max_premium: 0.05}
+  - {name: Maple Leaf,  keyword: maple-leaf,  max_premium: 0.05}
+  - {name: Canguro,     keyword: canguro,     max_premium: 0.05}
+  - {name: Panda 30g,   keyword: panda,       max_premium: 0.05}
+  - {name: Filarmonica, keyword: filarmonica, max_premium: 0.05}

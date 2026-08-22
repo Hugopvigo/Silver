@@ -1,317 +1,229 @@
-#!/usr/bin/python
-import requests
-import schedule
-import time
+#!/usr/bin/python3
+"""Silver v2: vigila monedas de plata 1oz en andorrano-joyeria.com,
+calcula la prima sobre el spot y notifica ofertas por Telegram.
+
+Ejecucion: `allcoins.py` hace una pasada y sale (lo dispara un systemd timer).
+"""
+import csv
 import datetime
-import openpyxl
-import os.path
-import sys
+import os
 import re
+import sys
+import time
+
+import requests
+import yaml
 from bs4 import BeautifulSoup
-from telegram_notifier import TelegramNotifier
-from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from zoneinfo import ZoneInfo
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+URL_BASE = 'https://www.andorrano-joyeria.com'
+URL_CATEGORIA = f'{URL_BASE}/tienda/monedas-de-plata/'
+TELEGRAM_API = 'https://api.telegram.org'
 
 
-def parse_precio(texto: str) -> float:
-    """Convierte formato europeo '1.234,56 €' a float 1234.56 de forma robusta."""
-    limpio = re.sub(r'[^\d,\-]', '', texto.strip())
+def cargar_config():
+    with open(os.path.join(BASE_DIR, 'config.yaml')) as f:
+        return yaml.safe_load(f)
+
+
+def crear_session():
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/120.0.0.0 Safari/537.36"
+    })
+    retry = Retry(total=3, backoff_factor=1,
+                  status_forcelist=[429, 500, 502, 503, 504],
+                  allowed_methods=["GET"])
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+def parse_precio(texto):
+    limpio = re.sub(r'[^\d,]', '', texto.strip())
     if not limpio:
-        raise ValueError(f"No se pudo extraer precio de: '{texto}'")
-
-    # Detectar formato europeo (coma como separador decimal)
+        raise ValueError(f"sin precio en '{texto}'")
     if ',' in limpio:
-        # Si también hay punto, el punto es separador de miles
-        if '.' in limpio:
-            limpio = limpio.replace('.', '').replace(',', '.')
-        else:
-            limpio = limpio.replace(',', '.')
-
+        limpio = limpio.replace('.', '').replace(',', '.')
     return float(limpio)
 
 
-def sanitizar_stock(texto: str) -> str:
-    """Limpia el texto de stock eliminando textos redundantes."""
-    return (texto
-            .replace("Debido a la situación actual, ciertos productos pueden sufrir retrasos excepcionales.", " ")
-            .replace("\n", "")
-            .replace("Estado:", "")
-            .strip())
-
-
-filename = 'precioplata.xlsx'
-if os.path.isfile(filename):
-    workbook = openpyxl.load_workbook(filename)
-    sheet = workbook.active
-else:
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet['A1'] = 'Fecha y hora'
-    sheet['B1'] = 'Moneda'
-    sheet['C1'] = 'Precio'
-    sheet['D1'] = 'Stock'
-
-URL_BASE = 'https://www.andorrano-joyeria.com'
-URL_CATEGORIA = f'{URL_BASE}/tienda/monedas-de-plata/'
-
-# Productos que queremos rastrear (keyword → precio maximo)
-# El script busca estos keywords en los nombres de la web
-PRODUCTOS_DESEADOS = [
-    {"keyword": "britannia", "name": "Britannia", "max_price": 25},
-    {"keyword": "krugerrand", "name": "Krugerrand", "max_price": 26},
-    {"keyword": "maple leaf", "name": "Maple Leaf", "max_price": 27},
-    {"keyword": "canguro", "name": "Canguro", "max_price": 25},
-    {"keyword": "panda", "name": "Panda", "max_price": 30},
-    {"keyword": "malta", "name": "Malta", "max_price": 28},
-]
-
-
-def obtener_productos():
-    """
-    Scrapea la categoria de monedas de plata y devuelve los productos
-    de 1 onza del anyo actual listos para checkear.
-
-    Filtra para quedarse solo con productos de 1 onza o 30g
-    (excluye 1/4, 1/2, 150g, 1kg, etc. y monedas de "varios anyos")
-    del anyo en curso o posterior.
-    """
-    anyo = datetime.date.today().year
-    anyo_corto = str(anyo)[-2:]
-    productos_encontrados = []
-
+def obtener_spot_eur(session):
     try:
-        response = session.get(URL_CATEGORIA, timeout=20)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        print(f"[ERROR] No se pudo obtener el listado de productos: {e}")
+        r = session.get('https://api.gold-api.com/price/XAG', timeout=15)
+        r.raise_for_status()
+        usd_oz = float(r.json()['price'])
+        r = session.get('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR',
+                        timeout=15)
+        r.raise_for_status()
+        cambio = float(r.json()['rates']['EUR'])
+        return round(usd_oz * cambio, 2)
+    except Exception as e:
+        print(f"[ERROR] Spot indisponible: {type(e).__name__}: {e}")
         return None
 
-    soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Buscar todos los enlaces a productos (href contiene "-info")
+def variante_de_slug(slug, keyword):
+    """Devuelve la etiqueta de variante ('2026' o 'años varios') si el slug
+    corresponde a la serie (keyword), o None si es otro producto."""
+    kw = keyword.replace(' ', '-')
+    prefijo = kw + '-'
+    if not slug.startswith(prefijo):
+        return None
+    resto = slug[len(prefijo):]
+    primero = resto.split('-')[0]
+    if primero.isdigit() and len(primero) == 4:
+        return primero
+    if primero in ('1oz', 'plata', '30g'):
+        return 'años varios'
+    return None
+
+
+def obtener_candidatos(session, series, errores):
+    """Scrapea el catalogo y devuelve {keyword: [{url, variante}]}."""
+    try:
+        r = session.get(URL_CATEGORIA, timeout=20)
+        r.raise_for_status()
+    except Exception as e:
+        errores.append(f"catálogo inaccesible: {type(e).__name__}: {e}")
+        return {}
+    soup = BeautifulSoup(r.content, 'html.parser')
+    candidatos = {s['keyword']: [] for s in series}
     for enlace in soup.find_all('a', href=True):
         href = enlace['href']
-
-        # Solo nos interesan enlaces a productos individuales
-        if not href.endswith('-info'):
+        if not href.endswith('-info') or not href.startswith('/tienda/monedas-de-plata/'):
             continue
-        if not href.startswith('/tienda/monedas-de-plata/'):
+        slug = href.rstrip('-info').rsplit('/', 1)[-1]
+        # Excluir tallas/pesos que no son 1 oz ni 30 g
+        if any(f in slug for f in ('1-4', '1-2', '1-10', '1-20', '1kg', '150g')):
             continue
-
-        # El nombre esta en el <a> dentro del <h3>
-        nombre_tag = enlace.find_parent('li')
-        if nombre_tag:
-            h3 = nombre_tag.find('h3')
-            if h3 and h3.find('a'):
-                nombre_completo = h3.find('a').get_text(strip=True)
-            else:
-                continue
-        else:
+        if '1oz' not in slug and '30g' not in slug:
             continue
-
-        # Normalizar nombre para busqueda
-        nombre_lower = nombre_completo.lower()
-
-        # Filtrar: solo 1 oz o 30g (nada de 1/4, 1/2, 150g, 1kg, etc.)
-        if any(f in nombre_lower for f in ['1/4', '1/2', '1/10', '1/20', '1 kg', '1kg']):
-            continue
-        if '150 g' in nombre_lower or '150g' in nombre_lower:
-            continue
-        if '1 oz' not in nombre_lower and '1 onza' not in nombre_lower and '30 g' not in nombre_lower and '30g' not in nombre_lower:
-            continue
-
-        # Preferir el anyo actual frente a "varios anyos" o anyos anteriores
-        if 'varios' in nombre_lower and len([c for c in nombre_lower if c.isdigit()]) <= 1:
-            continue
-
-        url_completa = URL_BASE + href
-
-        # Extraer nombre limpio (quitar "Moneda de Plata " y " 1 oz")
-        nombre_limpio = (nombre_completo
-                         .replace('Moneda de Plata ', '')
-                         .replace('Medalla de Plata ', '')
-                         .strip())
-
-        productos_encontrados.append({
-            'url': url_completa,
-            'name': nombre_limpio,
-        })
-
-    return productos_encontrados
-
-
-def emparejar_productos():
-    """
-    Busca en la web los productos que queremos y los empareja
-    con su max_price. Si no encuentra alguno, avisa pero no rompe.
-    """
-    catalogo = obtener_productos()
-    if catalogo is None:
-        print("[AVISO] No se pudo descargar el catalogo. Usando URLs por defecto.")
-        return None
-
-    if not catalogo:
-        print("[AVISO] El catalogo esta vacio. Usando URLs por defecto.")
-        return None
-
-    print(f"\nCatalogo disponible ({len(catalogo)} monedas 1oz):")
-    for p in catalogo:
-        print(f"  - {p['name']}")
-    print()
-
-    productos_finales = []
-    for deseado in PRODUCTOS_DESEADOS:
-        keyword = deseado['keyword'].lower()
-        # Buscar coincidencia en el catalogo
-        coincidencia = None
-        for p in catalogo:
-            if keyword in p['name'].lower():
-                coincidencia = p
+        for s in series:
+            variante = variante_de_slug(slug, s['keyword'])
+            if variante:
+                candidatos[s['keyword']].append({
+                    'url': URL_BASE + href,
+                    'variante': variante,
+                })
                 break
-
-        if coincidencia:
-            productos_finales.append({
-                'url': coincidencia['url'],
-                'name': deseado['name'],
-                'max_price': deseado['max_price'],
-            })
-            print(f"  ✓ {deseado['name']} → {coincidencia['url']}")
-        else:
-            print(f"  ✗ {deseado['name']} — NO ENCONTRADO en el catalogo")
-
-    return productos_finales
+    return candidatos
 
 
-f = open("token.txt", "r")
-token = f.read().strip()
-f.close()
-chat_id = "1333872"
-notifier = TelegramNotifier(token=token, chat_id=chat_id, parse_mode="HTML")
-
-# Sesión HTTP con User-Agent realista (simula un navegador normal)
-# para que la web no bloquee las peticiones automáticas.
-session = requests.Session()
-session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/120.0.0.0 Safari/537.36"
-})
-
-# Reintentos automáticos: si falla la conexión, timeout o da error 5xx,
-# reintenta hasta 3 veces con espera progresiva (1s, 2s, 4s).
-retry_strategy = Retry(
-    total=3,
-    backoff_factor=1,
-    status_forcelist=[429, 500, 502, 503, 504],
-    allowed_methods=["GET"]
-)
-adapter = HTTPAdapter(max_retries=retry_strategy)
-session.mount("https://", adapter)
-session.mount("http://", adapter)
-
-
-# Obtener productos de la web (con fallback a URLs por defecto)
-products = emparejar_productos()
-if not products:
-    # Fallback: URLs generadas con el anyo actual
-    anyo = datetime.date.today().year
-    anyo_corto = str(anyo)[-2:]
-    print("[FALLBACK] Usando URLs generadas con el anyo actual.")
-    products = [
-        {"url": f"{URL_BASE}/tienda/monedas-de-plata/reino-unido/reino-unido-britannia-kciii-{anyo}-1oz-plata-info", "name": f"Britannia {anyo_corto}", "max_price": 25},
-        {"url": f"{URL_BASE}/tienda/monedas-de-plata/otros-paises/sudafrica-krugerrand-{anyo}-1oz-plata-info", "name": "Krugerrand", "max_price": 26},
-        {"url": f"{URL_BASE}/tienda/monedas-de-plata/canada/canada-maple-leaf-{anyo}-1oz-plata-info", "name": "Maple Leaf", "max_price": 27},
-        {"url": f"{URL_BASE}/tienda/monedas-de-plata/australia/australia-canguro-{anyo}-1oz-plata-info", "name": "Canguro", "max_price": 25},
-        {"url": f"{URL_BASE}/tienda/monedas-de-plata/china/china-panda-{anyo}-30g-plata-info", "name": f"Panda {anyo_corto}", "max_price": 30},
-        {"url": f"{URL_BASE}/tienda/monedas-de-plata/otros-paises/malta-cruz-de-malta-{anyo}-1oz-plata-info", "name": "Malta", "max_price": 28}
-    ]
-
-
-def check_price(product):
-    ahora = datetime.datetime.now()
-    cadena = ahora.strftime("%d/%m/%Y %H:%M")
-
+def obtener_precio(session, url, errores):
     try:
-        # Petición HTTP con timeout y validación
-        response = session.get(product["url"], timeout=15)
-        response.raise_for_status()
-
-        soup = BeautifulSoup(response.content, "html.parser")
-
-        # Extraer precio
-        price_element = soup.find(class_="Price")
-        if price_element is None:
-            raise ValueError("No se encontró el elemento con clase 'Price'")
-
-        price_text = price_element.get_text()
-        price_number = parse_precio(price_text)
-
-        # Extraer stock
-        availability_element = soup.find(class_="availability")
-        if availability_element is not None:
-            availability_text = availability_element.get_text()
-            availability_status = sanitizar_stock(availability_text)
-        else:
-            availability_status = "Sin información"
-
-        # Guardar en Excel
-        row = (cadena, product["name"], price_number, availability_status)
-        sheet.append(row)
-
-        # Notificar si es una buena oferta
-        if (price_number < product["max_price"]
-                and availability_status.lower() not in ["fuera de stock", "agotado temporalmente"]):
-            print(f"{cadena} - La moneda {product['name']} está a {price_number} euros. ¡Es una buena oferta! | {availability_status}")
-            notifier.send(
-                f"TEST - La moneda {product['name']} está a <b>{price_number} euros.</b> "
-                f"¡Es una buena oferta! | {availability_status} | {cadena} | "
-                f"Compralo en: {product['url']}"
-            )
-        else:
-            print(f"{cadena} - {product['name']} está a {price_number} euros. {availability_status}")
-
-        workbook.save('precioplata.xlsx')
-
-    except requests.exceptions.Timeout:
-        print(f"{cadena} - Error: Timeout al consultar {product['name']}")
-    except requests.exceptions.ConnectionError:
-        print(f"{cadena} - Error: No se pudo conectar al consultar {product['name']}")
-    except requests.exceptions.HTTPError as e:
-        print(f"{cadena} - Error HTTP {e.response.status_code} al consultar {product['name']}")
-    except ValueError as e:
-        print(f"{cadena} - Error en datos de {product['name']}: {e}")
+        r = session.get(url, timeout=15)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.content, 'html.parser')
+        el = soup.select_one('.PricesalesPrice')
+        if el is None:
+            raise ValueError("selector .PricesalesPrice no encontrado")
+        return parse_precio(el.get_text())
     except Exception as e:
-        print(f"{cadena} - Error inesperado con {product['name']}: {type(e).__name__}: {e}")
+        errores.append(f"{url.rsplit('/', 1)[-1]}: {type(e).__name__}: {e}")
+        return None
 
 
-def run_check():
-    print(f"\n--- Ejecutando comprobación: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')} ---")
-    for product in products:
-        check_price(product)
-        time.sleep(2)  # Pequeña pausa entre productos para no saturar la web
-    print("--- Comprobación finalizada ---\n")
-
-
-# --- MODO DE EJECUCIÓN ---
-# Sin argumentos: bucle infinito con scheduler cada 3h
-# Con --cron: ejecuta una vez y sale (para usar con cron del sistema)
-
-if '--cron' in sys.argv:
-    # Ejecutar una vez y salir
-    run_check()
-    print("[CRON] Comprobación finalizada. Saliendo...")
-else:
-    # Ejecutar una vez al inicio
-    run_check()
-
-    # Programar cada 3 horas
-    schedule.every(3).hours.do(run_check)
-
-    # Bucle principal
-    print("[SCHEDULER] Bucle infinito iniciado. Ctrl+C para salir.")
+def enviar_telegram(token, chat_id, texto):
     try:
-        while True:
-            schedule.run_pending()
-            time.sleep(60)
-    except KeyboardInterrupt:
-        print("\n[SCHEDULER] Detenido por el usuario.")
+        r = requests.post(
+            f'{TELEGRAM_API}/bot{token}/sendMessage',
+            json={'chat_id': chat_id, 'text': texto},
+            timeout=15)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"[ERROR] Telegram: {type(e).__name__}: {e}")
+
+
+def guardar_csv(filas):
+    path = os.path.join(BASE_DIR, 'historico.csv')
+    nuevo = not os.path.isfile(path)
+    with open(path, 'a', newline='') as f:
+        w = csv.writer(f)
+        if nuevo:
+            w.writerow(['fecha_hora', 'serie', 'variante', 'precio_eur',
+                        'spot_eur', 'prima_pct'])
+        w.writerows(filas)
+
+
+def main():
+    config = cargar_config()
+    tz = ZoneInfo(config.get('timezone', 'Europe/Madrid'))
+    ahora = datetime.datetime.now(tz)
+    token = open(os.path.join(BASE_DIR, config['token_file'])).read().strip()
+    chat_id = str(config['chat_id'])
+    errores = []
+
+    session = crear_session()
+    spot = obtener_spot_eur(session)
+
+    series = config['series']
+    resultados = []
+    filas_csv = []
+    ofertas = []
+
+    if spot is None:
+        errores.append('spot indisponible (gold-api/frankfurter)')
+    else:
+        candidatos = obtener_candidatos(session, series, errores)
+        for s in series:
+            nombre = s['name']
+            opciones = candidatos.get(s['keyword'], [])
+            if not opciones:
+                errores.append(f"{nombre}: sin variantes en catálogo")
+                continue
+            precios = []
+            for op in opciones:
+                precio = obtener_precio(session, op['url'], errores)
+                if precio is not None:
+                    precios.append((precio, op))
+                time.sleep(2)
+            if not precios:
+                errores.append(f"{nombre}: ninguna variante con precio legible")
+                continue
+            precio, op = min(precios, key=lambda x: x[0])
+            prima_pct = round((precio / spot - 1) * 100, 1)
+            resultados.append({'serie': nombre, 'variante': op['variante'],
+                               'precio': precio, 'prima': prima_pct})
+            filas_csv.append([ahora.strftime('%Y-%m-%d %H:%M'), nombre,
+                              op['variante'], precio, spot, prima_pct])
+            if prima_pct <= s['max_premium'] * 100:
+                ofertas.append((nombre, op, precio, prima_pct))
+
+    for nombre, op, precio, prima in ofertas:
+        enviar_telegram(token, chat_id,
+                        f"⚡ Oferta: {nombre} ({op['variante']}) a {precio} € "
+                        f"({prima}% sobre spot de {spot} €/oz)\n{op['url']}")
+
+    if filas_csv:
+        guardar_csv(filas_csv)
+
+    if ahora.hour == int(config.get('digest_hour', 10)):
+        lineas = [f"📊 Silver diario — {ahora.strftime('%d/%m')}"]
+        lineas.append(f"Spot plata: {'%.2f €/oz' % spot if spot else 'NO DISPONIBLE'}\n")
+        for r_ in resultados:
+            marca = ''
+            if any(o[0] == r_['serie'] for o in ofertas):
+                marca = ' ⚡'
+            lineas.append(f"• {r_['serie']}: {r_['precio']} € "
+                          f"({r_['prima']:+.1f}%) [{r_['variante']}]{marca}")
+        faltantes = [s['name'] for s in series
+                     if s['name'] not in [r_['serie'] for r_ in resultados]]
+        for f_ in faltantes:
+            lineas.append(f"• {f_}: ❌ sin datos")
+        lineas.append(f"\n✅ {len(resultados)}/{len(series)} series | errores: {len(errores)}")
+        for e in errores[:5]:
+            lineas.append(f"  ❌ {e}")
+        enviar_telegram(token, chat_id, '\n'.join(lineas))
+
+    print(f"[OK] {ahora}: {len(resultados)} series, spot={spot}, errores={len(errores)}")
+
+
+if __name__ == '__main__':
+    main()
