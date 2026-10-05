@@ -9,3 +9,5 @@ series:
   - {name: Canguro,     keyword: canguro,     max_premium: 0.05}
   - {name: Panda 30g,   keyword: panda,       max_premium: 0.05}
   - {name: Filarmonica, keyword: filarmonica, max_premium: 0.05}
+  - {name: American Eagle, keyword: american-eagle, max_premium: 0.05}
+  - {name: Libertad, keyword: libertad-de-mexico, max_premium: 0.05}
