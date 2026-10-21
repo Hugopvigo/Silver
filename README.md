@@ -1,3 +1,8 @@
+<meta property="og:title" content="SILVER">
+<meta property="og:description" content="Un vigilante de primas sobre las monedas de plata de 1 onza.">
+<meta property="og:image" content="https://raw.githubusercontent.com/Hugopvigo/Silver/main/og.png">
+
+
 <p align="center">
   <img src="cabecera.png" alt="Silver — vigilante de primas sobre las monedas de plata" width="100%">
 </p>
