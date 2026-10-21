@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/capturas/00-cabecera.png" alt="Silver — vigilante de primas sobre las monedas de plata" width="100%">
+  <img src="cabecera.png" alt="Silver — vigilante de primas sobre las monedas de plata" width="100%">
 </p>
 
 <p align="center">
@@ -162,7 +162,7 @@ silver/
 ├── deploy/
 │   ├── silver.service unidad systemd (oneshot)
 │   └── silver.timer   timer horario
-├── docs/capturas/     cabecera del README
+├── cabecera.png        cabecera del README
 ├── Install.md         guía de instalación de la v1 (legado)
 ├── coin.py            prueba de precio de una moneda (legado)
 ├── GoogleSheet.py     ejemplo de subida a Google Sheets (legado)
